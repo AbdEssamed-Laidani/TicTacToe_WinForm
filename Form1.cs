@@ -18,6 +18,7 @@ namespace TicTacToe
         private char[,] GameBoard = { { '1', '2', '3' }, { '4', '5', '6' }, { '7', '8', '9' } };
         private bool ContinuePlaying = true;
         private byte RoundCounter = 0;
+        private byte[] WinnerCellsIndexes = new byte[3];
 
         public Form1()
         {
@@ -37,13 +38,11 @@ namespace TicTacToe
         }
         private void SetBoardPicture()
         {
-            byte counter = 9;
             foreach (var item in gbGameBoard.Controls.OfType<PictureBox>())
             {
                 item.Image = TicTacToe.Properties.Resources.question_mark_96;
-                item.Tag = Convert.ChangeType(counter, item.Tag.GetType());
+                item.Enabled = true;
                 item.BackColor = Color.Indigo;
-                counter--;
             }
 
         }
@@ -56,46 +55,58 @@ namespace TicTacToe
             lblGameWinner.Text = "In Progress";
             lblPlayer.Text = "Player 1";
             lblPlayer.Tag = "X";
+            gbGameBoard.Enabled = true;
         }
-        private void SetWinLine(byte rowFirstCell,byte colFirstCell, byte rowSecondCell, byte colSecondCell, byte rowThirdCell, byte colThirdCell)
+        private byte GetWinnerCell(byte row,byte col)
         {
-            byte FirstCellIndex = Convert.ToByte((rowFirstCell * 3) + colFirstCell + 1);
-            byte SecondCellIndex = Convert.ToByte((rowSecondCell * 3) + colSecondCell + 1);
-            byte ThirdCellIndex = Convert.ToByte((rowThirdCell * 3) + colThirdCell + 1);
-            byte ItemTag = 0;
-            foreach (var item in gbGameBoard.Controls.OfType<PictureBox>())
+            return Convert.ToByte((row * 3) + col + 1);
+        }
+        private void SetWinLine()
+        {
+            foreach (var item in WinnerCellsIndexes)
             {
-                ItemTag = Convert.ToByte(item.Tag);
-                if (ItemTag == FirstCellIndex)
-                    item.BackColor = Color.Green;
-                else if (ItemTag == SecondCellIndex)
-                    item.BackColor = Color.Green;
-                else if (ItemTag == ThirdCellIndex)
-                    item.BackColor = Color.Green;
+                var targetBox = gbGameBoard.Controls.OfType<PictureBox>().FirstOrDefault(pb => Convert.ToByte(pb.Tag) == item);
+
+                if (targetBox != null)
+                {
+                    targetBox.BackColor = Color.Green;
+                }
             }
         }
         private bool IsWin(char PlayerSign)
         {
             if (GameBoard[0, 0] == PlayerSign && GameBoard[1, 1] == PlayerSign && GameBoard[2, 2] == PlayerSign)
             {
-                SetWinLine(0, 0, 1, 1, 2, 2);
+                WinnerCellsIndexes[0] = GetWinnerCell(0, 0);
+                WinnerCellsIndexes[1] = GetWinnerCell(1, 1);
+                WinnerCellsIndexes[2] = GetWinnerCell(2, 2);
+                SetWinLine();
                 return true;
             }
             if (GameBoard[0, 2] == PlayerSign && GameBoard[1, 1] == PlayerSign && GameBoard[2, 0] == PlayerSign)
             {
-                SetWinLine(0, 2, 1, 1, 2, 0);
+                WinnerCellsIndexes[0] = GetWinnerCell(0, 2);
+                WinnerCellsIndexes[1] = GetWinnerCell(1, 1);
+                WinnerCellsIndexes[2] = GetWinnerCell(2, 0);
+                SetWinLine();
                 return true;
             }
             for (byte i = 0; i < 3; i++)
             {
                 if (GameBoard[i, 0] == PlayerSign && GameBoard[i, 1] == PlayerSign && GameBoard[i, 2] == PlayerSign)
                 {
-                    SetWinLine(i, 0, i, 1, i, 2);
+                    WinnerCellsIndexes[0] = GetWinnerCell(i, 0);
+                    WinnerCellsIndexes[1] = GetWinnerCell(i, 1);
+                    WinnerCellsIndexes[2] = GetWinnerCell(i, 2);
+                    SetWinLine();
                     return true;
                 }
                 if (GameBoard[0, i] == PlayerSign && GameBoard[1, i] == PlayerSign && GameBoard[2, i] == PlayerSign)
                 {
-                    SetWinLine(0, i, 1, i, 2, i);
+                    WinnerCellsIndexes[0] = GetWinnerCell(0, i);
+                    WinnerCellsIndexes[1] = GetWinnerCell(1, i);
+                    WinnerCellsIndexes[2] = GetWinnerCell(2, i);
+                    SetWinLine();
                     return true;
                 }
             }
@@ -109,8 +120,9 @@ namespace TicTacToe
 
             box.Image = image;
             GameBoard[row, col] = Convert.ToChar(PlayerSign);
+            box.Enabled = false;
         }
-        private void UpdateRound(object sender, in string NewTag, in string NewPlayerName, in char PlayerSign,Image image)
+        private void UpdateRound(object sender, in string NewPlayerTag, in string NewPlayerName, in char PlayerSign,Image image)
         {
             RoundCounter++;
             UpdateGameBoard(((PictureBox)sender), PlayerSign, image);
@@ -118,6 +130,7 @@ namespace TicTacToe
             if (!ContinuePlaying)
             {
                 lblGameWinner.Text = lblPlayer.Text;
+                gbGameBoard.Enabled = false;
                 return;
             }
             else
@@ -126,11 +139,12 @@ namespace TicTacToe
                 {
                     lblGameWinner.Text = "Draw";
                     ContinuePlaying = false;
+                    gbGameBoard.Enabled = false;
                     return;
                 }
             }
             lblPlayer.Text = NewPlayerName;
-            lblPlayer.Tag = NewTag;
+            lblPlayer.Tag = NewPlayerTag;
         }
         private void UpdateGame(object sender)
         {
@@ -141,8 +155,7 @@ namespace TicTacToe
         }
         private void Click_Changed(object sender, MouseEventArgs e)
         {
-            char SenderTag = Convert.ToChar(((PictureBox)sender).Tag);
-            if (Char.IsDigit(SenderTag) && ContinuePlaying)
+            if (ContinuePlaying)
             {
                 UpdateGame(sender);
             }
